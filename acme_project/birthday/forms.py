@@ -19,7 +19,9 @@ class BirthdayForm(forms.ModelForm):
 
     class Meta:
         model = Birthday
-        fields = '__all__'
+        # fields = '__all__'
+        exclude = ('author',)  # заменили fields = '__all__' на exclude, 
+                               # чтобы не отображать поле автор при редактировании формы
         widgets = {
             'birthday': forms.DateInput(format=('%Y-%m-%d'), attrs={'type': 'date'})
         }

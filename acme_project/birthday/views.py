@@ -1,11 +1,24 @@
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.http import HttpResponse
 from django.views.generic import (
     CreateView, DeleteView, DetailView, ListView, UpdateView
 )
+#  LoginRequiredMixin гарантирует, что только авторизованные пользователи 
+# могут получить доступ к представлению. - UserPassesTestMixin проверяет, 
+# что текущий пользователь является автором объекта, который пытается удалить. 
+
+
 from django.urls import reverse_lazy
 
 from .forms import BirthdayForm
 from .models import Birthday
 from .utils import calculate_birthday_countdown
+
+
+@login_required
+def simple_view(request):
+    return HttpResponse('Страница для залогиненных пользователей!')
 
 
 class BirthdayListView(ListView):
@@ -18,16 +31,27 @@ class BirthdayMixin:
     model = Birthday
 
 
+class OnlyAuthorMixin(UserPassesTestMixin):
 
-class BirthdayCreateView(BirthdayMixin, CreateView):
+    def test_func(self):
+        object = self.get_object()
+        return object.author == self.request.user 
+
+
+class BirthdayCreateView(OnlyAuthorMixin, LoginRequiredMixin, BirthdayMixin, CreateView):
+    form_class = BirthdayForm
+
+    def form_valid(self, form):
+        # Присвоить полю author объект пользователя из запроса.
+        form.instance.author = self.request.user
+        # Продолжить валидацию, описанную в форме.
+        return super().form_valid(form) 
+
+class BirthdayUpdateView(OnlyAuthorMixin, LoginRequiredMixin, BirthdayMixin, UpdateView):
     form_class = BirthdayForm
 
 
-class BirthdayUpdateView(BirthdayMixin, UpdateView):
-    form_class = BirthdayForm
-
-
-class BirthdayDeleteView(BirthdayMixin, DeleteView):
+class BirthdayDeleteView(OnlyAuthorMixin, LoginRequiredMixin, BirthdayMixin, DeleteView):
     pass 
 
 
